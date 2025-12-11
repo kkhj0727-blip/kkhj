@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>가위 바위 보</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 손 흔들기 애니메이션 */
+        @keyframes shakeLeft {
+            0% { transform: rotate(90deg) translateY(0); }
+            25% { transform: rotate(90deg) translateY(-20px); }
+            50% { transform: rotate(90deg) translateY(0); }
+            75% { transform: rotate(90deg) translateY(-20px); }
+            100% { transform: rotate(90deg) translateY(0); }
+        }
+
+        @keyframes shakeRight {
+            0% { transform: scaleX(-1) rotate(90deg) translateY(0); }
+            25% { transform: scaleX(-1) rotate(90deg) translateY(-20px); }
+            50% { transform: scaleX(-1) rotate(90deg) translateY(0); }
+            75% { transform: scaleX(-1) rotate(90deg) translateY(-20px); }
+            100% { transform: scaleX(-1) rotate(90deg) translateY(0); }
+        }
+
+        .hand {
+            font-size: 8rem;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        /* 기본 대기 상태 (주먹) - 왼쪽 플레이어는 오른쪽을 봄 */
+        .hand-left {
+            transform: rotate(90deg);
+        }
+
+        /* 기본 대기 상태 (주먹) - 오른쪽 컴퓨터는 왼쪽을 봄 (좌우반전) */
+        .hand-right {
+            transform: scaleX(-1) rotate(90deg);
+        }
+
+        /* 애니메이션 클래스 */
+        .shaking-left {
+            animation: shakeLeft 0.8s ease-in-out;
+        }
+        .shaking-right {
+            animation: shakeRight 0.8s ease-in-out;
+        }
+
+        /* 결과 아이콘 보정 (가위바위보 결과가 나왔을 때 정방향으로 보이게) */
+        .result-pose {
+            transform: rotate(0deg) !important; 
+        }
+
+        /* 버튼 스타일 */
+        .choice-btn {
+            transition: all 0.2s;
+        }
+        .choice-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-indigo-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border-4 border-indigo-200">
+        
+        <!-- 헤더 & 점수판 -->
+        <div class="bg-indigo-600 p-6 text-white text-center">
+            <h1 class="text-3xl font-black mb-4 tracking-tighter">✌️ 가위 바위 보 ✊</h1>
+            
+            <div class="flex justify-between items-center bg-indigo-800 rounded-xl p-4 shadow-inner">
+                <div class="flex flex-col items-center w-1/3">
+                    <span class="text-indigo-300 text-sm font-bold mb-1">나 (Player)</span>
+                    <span id="player-score" class="text-4xl font-mono font-bold text-yellow-400">0</span>
+                </div>
+                <div class="text-indigo-400 font-bold text-xl">VS</div>
+                <div class="flex flex-col items-center w-1/3">
+                    <span class="text-indigo-300 text-sm font-bold mb-1">컴퓨터 (CPU)</span>
+                    <span id="computer-score" class="text-4xl font-mono font-bold text-white">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 게임 화면 (손 모양) -->
+        <div class="h-64 flex justify-center items-center relative bg-indigo-50 overflow-hidden">
+            <!-- 결과 텍스트 오버레이 -->
+            <div id="result-text" class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-0 transition-opacity duration-300">
+                <span class="text-4xl md:text-5xl font-black text-gray-800 drop-shadow-lg bg-white/80 px-6 py-2 rounded-full transform scale-110">
+                    준비!
+                </span>
+            </div>
+
+            <div class="flex justify-around w-full px-4 items-center">
+                <!-- 플레이어 손 -->
+                <div class="relative">
+                    <div id="player-hand" class="hand hand-left">✊</div>
+                </div>
+                
+                <!-- 컴퓨터 손 -->
+                <div class="relative">
+                    <div id="computer-hand" class="hand hand-right">✊</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 컨트롤 패널 -->
+        <div class="p-6 bg-white">
+            <p class="text-center text-gray-500 mb-4 font-bold" id="status-msg">무엇을 내시겠습니까?</p>
+            
+            <!-- 선택 버튼 -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <button onclick="playGame('scissors')" id="btn-scissors" class="choice-btn flex flex-col items-center justify-center bg-yellow-100 hover:bg-yellow-200 border-b-4 border-yellow-400 rounded-xl p-4 aspect-square">
+                    <span class="text-4xl mb-2">✌️</span>
+                    <span class="font-bold text-yellow-800">가위</span>
+                </button>
+                <button onclick="playGame('rock')" id="btn-rock" class="choice-btn flex flex-col items-center justify-center bg-gray-100 hover:bg-gray-200 border-b-4 border-gray-400 rounded-xl p-4 aspect-square">
+                    <span class="text-4xl mb-2">✊</span>
+                    <span class="font-bold text-gray-800">바위</span>
+                </button>
+                <button onclick="playGame('paper')" id="btn-paper" class="choice-btn flex flex-col items-center justify-center bg-blue-100 hover:bg-blue-200 border-b-4 border-blue-400 rounded-xl p-4 aspect-square">
+                    <span class="text-4xl mb-2">🖐</span>
+                    <span class="font-bold text-blue-800">보</span>
+                </button>
+            </div>
+
+            <!-- 리셋 버튼 -->
+            <button onclick="resetScore()" class="w-full py-3 text-gray-400 hover:text-red-500 font-bold text-sm transition flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                점수 초기화
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 변수 설정
+        const playerHand = document.getElementById('player-hand');
+        const computerHand = document.getElementById('computer-hand');
+        const resultText = document.getElementById('result-text');
+        const statusMsg = document.getElementById('status-msg');
+        const playerScoreEl = document.getElementById('player-score');
+        const computerScoreEl = document.getElementById('computer-score');
+        const buttons = document.querySelectorAll('.choice-btn');
+
+        let playerScore = 0;
+        let computerScore = 0;
+        let isPlaying = false;
+
+        const CHOICES = {
+            rock: '✊',
+            paper: '🖐',
+            scissors: '✌️'
+        };
+
+        const RESULT_MESSAGES = {
+            win: { text: "이겼습니다! 🎉", color: "text-green-600" },
+            lose: { text: "졌습니다... 😭", color: "text-red-600" },
+            draw: { text: "비겼습니다! 😐", color: "text-gray-600" }
+        };
+
+        function playGame(playerChoice) {
+            if (isPlaying) return;
+            isPlaying = true;
+
+            // 1. UI 초기화 (버튼 비활성화 및 흔들기 준비)
+            buttons.forEach(btn => btn.disabled = true);
+            statusMsg.textContent = "가위... 바위... 보!";
+            resultText.style.opacity = '0';
+            
+            // 손 모양 초기화 (주먹)
+            playerHand.textContent = CHOICES.rock;
+            computerHand.textContent = CHOICES.rock;
+            
+            // 회전/반전 클래스 초기화 (흔들기 위한 준비)
+            playerHand.className = 'hand hand-left shaking-left';
+            computerHand.className = 'hand hand-right shaking-right';
+
+            // 2. 애니메이션 시간 (0.8초) 후 결과 공개
+            setTimeout(() => {
+                // 컴퓨터의 선택 랜덤 생성
+                const choicesArr = ['rock', 'paper', 'scissors'];
+                const computerChoice = choicesArr[Math.floor(Math.random() * 3)];
+
+                // 3. 결과 계산
+                const result = getResult(playerChoice, computerChoice);
+
+                // 4. UI 업데이트
+                updateUI(playerChoice, computerChoice, result);
+
+                // 5. 게임 상태 해제
+                isPlaying = false;
+                buttons.forEach(btn => btn.disabled = false);
+
+            }, 800); // 애니메이션 지속시간과 일치
+        }
+
+        function getResult(p, c) {
+            if (p === c) return 'draw';
+            if ((p === 'rock' && c === 'scissors') ||
+                (p === 'paper' && c === 'rock') ||
+                (p === 'scissors' && c === 'paper')) {
+                return 'win';
+            }
+            return 'lose';
+        }
+
+        function updateUI(pChoice, cChoice, result) {
+            // 손 모양 변경 및 애니메이션 클래스 제거, 정방향 클래스 추가
+            playerHand.className = 'hand result-pose';
+            computerHand.className = 'hand result-pose';
+            
+            playerHand.textContent = CHOICES[pChoice];
+            computerHand.textContent = CHOICES[cChoice];
+
+            // 텍스트 업데이트
+            const msgData = RESULT_MESSAGES[result];
+            const span = resultText.querySelector('span');
+            span.textContent = msgData.text;
+            span.className = `text-4xl md:text-5xl font-black drop-shadow-lg bg-white/90 px-8 py-3 rounded-full transform scale-100 border-4 ${result === 'win' ? 'border-green-400 text-green-600' : result === 'lose' ? 'border-red-400 text-red-600' : 'border-gray-400 text-gray-600'}`;
+            
+            resultText.style.opacity = '1';
+
+            // 점수 업데이트
+            if (result === 'win') {
+                playerScore++;
+                playerScoreEl.textContent = playerScore;
+                statusMsg.textContent = "멋진 승리입니다!";
+            } else if (result === 'lose') {
+                computerScore++;
+                computerScoreEl.textContent = computerScore;
+                statusMsg.textContent = "아쉽네요.. 다시 도전해보세요!";
+            } else {
+                statusMsg.textContent = "비겼습니다. 다시 한번!";
+            }
+        }
+
+        function resetScore() {
+            if (confirm('점수를 정말 초기화 하시겠습니까?')) {
+                playerScore = 0;
+                computerScore = 0;
+                playerScoreEl.textContent = '0';
+                computerScoreEl.textContent = '0';
+                statusMsg.textContent = "새로운 게임을 시작하세요!";
+                
+                // 손 위치 원상복구
+                playerHand.className = 'hand hand-left';
+                computerHand.className = 'hand hand-right';
+                playerHand.textContent = CHOICES.rock;
+                computerHand.textContent = CHOICES.rock;
+                resultText.style.opacity = '0';
+            }
+        }
+    </script>
+</body>
+</html>
