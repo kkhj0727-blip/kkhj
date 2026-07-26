@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>세계지역 탐구 보고서</title>
+</head>
+<body>
+
+<script>
+  // ★★★ Apps Script 웹앱 URL을 붙여넣으세요 (student/teacher 공용) ★★★
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4eKaXmTIQJil3Kx_J736j2fTR64ykH-1wCN3dyw17JDrKE5EkCLeckv9gMIFe1hjSdg/exec";
+  // 우리 반 전체 인원 (미제출 인원 계산용)
+  const CLASS_SIZE = 30;
+</script>
+
+<style>
+  :root{
+    --bg:#F5F2E9; --ink:#28251F; --forest:#175443; --forest-2:#2E7D5B;
+    --gold:#A9812E; --gold-light:#EDE3C8; --card:#FFFFFF; --line:#E2DCC9;
+    --error:#9C4A42; --success:#2E7D5B; --muted:#8B8172;
+    /* 단계 탭 구분 색상 (가설 · 조사데이터 · 최종결론 · 교사피드백) — 짙은 그린·세이지·커피브라운·골드 */
+    --step1:#175443; --step2:#5C8368; --step3:#8C6239; --step4:#A9812E;
+    /* 함초롬바탕/굴림이 설치된 PC(주로 한글 프로그램이 깔린 윈도우)에서는 해당 폰트로,
+       없으면 비슷한 계열의 대체 서체로 자동 전환됩니다. */
+    --font-display: '함초롬바탕', 'HCR Batang', '굴림', 'Gulim', 'Malgun Gothic', serif;
+    --font-body: '굴림', 'Gulim', '함초롬바탕', 'HCR Batang', 'Malgun Gothic', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ===== 상단 헤더 + 탭 ===== */
+  header{
+    background:var(--forest); color:#fff;
+    padding:22px 20px 0; position:relative; overflow:hidden;
+  }
+  header::after{
+    content:""; position:absolute; right:-40px; top:-40px;
+    width:160px; height:160px; border-radius:50%;
+    background:radial-gradient(circle, var(--gold) 0%, transparent 70%); opacity:0.35;
+  }
+  .header-top{ max-width:1080px; margin:0 auto; text-align:center; padding-bottom:18px; }
+  .eyebrow{ font-size:12.5px; letter-spacing:0.14em; color:#F1DCB8; font-weight:700; margin-bottom:6px; }
+  h1{ font-family:var(--font-display); font-size:21px; margin:0 0 6px; line-height:1.35; }
+  header p.desc{ margin:0; font-size:13.5px; color:#D9E4DF; }
+
+  .tabs{
+    max-width:1080px; margin:0 auto; display:flex; gap:6px; position:relative; z-index:1;
+  }
+  .tab-btn{
+    flex:1; background:rgba(255,255,255,0.08); color:#D9E4DF; border:none;
+    border-radius:10px 10px 0 0; padding:12px 10px; font-size:14px; font-weight:700;
+    cursor:pointer; font-family:inherit;
+  }
+  .tab-btn.active{ background:var(--bg); color:var(--forest); }
+
+  main{ max-width:1080px; margin:0 auto; padding:20px 16px 60px; }
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  /* ===== 공용 카드 ===== */
+  .card{
+    background:var(--card); border-radius:16px; padding:22px 18px; margin-bottom:16px;
+    box-shadow:0 2px 10px rgba(30,61,58,0.08); border:1px solid var(--line);
+  }
+  .card h2{ font-family:var(--font-display); font-size:17px; margin:0 0 4px; color:var(--forest); }
+  .card .cdesc{ font-size:13px; color:#5B655F; margin:0 0 16px; line-height:1.5; }
+  label{ display:block; font-size:13.5px; font-weight:700; margin:14px 0 6px; color:var(--forest); }
+  label .req{ color:var(--error); margin-left:2px; }
+  input[type=text], input[type=password], textarea{
+    width:100%; border:1.5px solid var(--line); border-radius:10px; padding:11px 12px;
+    font-size:15px; font-family:inherit; background:#FCFBF7; color:var(--ink);
+  }
+  input:focus, textarea:focus{ outline:none; border-color:var(--forest-2); background:#fff; }
+  textarea{ min-height:74px; resize:vertical; }
+  button{ font-family:inherit; cursor:pointer; }
+
+  /* ===== 학생용 화면 ===== */
+  #studentWrap{ max-width:520px; margin:0 auto; }
+  #entryScreen{
+    max-width:420px; margin:10px auto 0; background:#fff; border-radius:16px; padding:30px 24px;
+    box-shadow:0 2px 14px rgba(30,61,58,0.1); text-align:center; border:1px solid var(--line);
+  }
+  #entryScreen h2{ font-family:var(--font-display); color:var(--forest); margin-top:0; }
+  #entryScreen .cdesc{ text-align:center; }
+  #entryScreen label{ text-align:left; }
+  #entryScreen button{
+    width:100%; background:var(--forest); color:#fff; border:none; border-radius:10px;
+    padding:13px; font-size:15px; font-weight:700; margin-top:16px;
+  }
+  #entryError{ color:var(--error); font-size:13px; margin-top:8px; display:none; }
+  .name-row{ display:flex; gap:10px; }
+  .name-row .field{ flex:1; }
+  .whoami{
+    display:inline-flex; align-items:center; gap:6px; background:var(--gold-light);
+    color:#7A5A22; font-size:12.5px; font-weight:700; padding:5px 12px; border-radius:20px;
+    margin-bottom:12px;
+  }
+  .student-title{
+    font-family:var(--font-display); font-size:19px; color:var(--forest);
+    margin:0 0 14px;
+  }
+
+  /* ===== 단계 탭 (가설/조사데이터/최종결론/교사피드백) — 탭마다 고유 색상 ===== */
+  .step-tabs{ display:flex; gap:6px; margin-bottom:12px; }
+  .step-btn{
+    flex:1; background:#fff; color:var(--muted); border:1.5px solid var(--line);
+    border-radius:10px; padding:10px 6px; font-size:13px; font-weight:700; font-family:inherit;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .step-btn:nth-child(1){ color:var(--step1); border-color:var(--step1); }
+  .step-btn:nth-child(2){ color:var(--step2); border-color:var(--step2); }
+  .step-btn:nth-child(3){ color:var(--step3); border-color:var(--step3); }
+  .step-btn:nth-child(4){ color:var(--step4); border-color:var(--step4); }
+  .step-btn:nth-child(1).active{ background:var(--step1); color:#fff; border-color:var(--step1); }
+  .step-btn:nth-child(2).active{ background:var(--step2); color:#fff; border-color:var(--step2); }
+  .step-btn:nth-child(3).active{ background:var(--step3); color:#fff; border-color:var(--step3); }
+  .step-btn:nth-child(4).active{ background:var(--step4); color:#fff; border-color:var(--step4); }
+  .step-panel{ display:none; }
+  .step-panel.active{ display:block; }
+
+  .search-row{ display:flex; gap:8px; align-items:flex-start; }
+  .search-row input, .search-row textarea{ flex:1; }
+  .search-btn{
+    background:var(--gold-light); color:#7A5A22; border:1.5px solid var(--gold);
+    border-radius:10px; padding:0 12px; font-size:14px; font-weight:700; min-height:44px;
+    flex-shrink:0;
+  }
+  .search-btn.wide{ width:100%; min-height:38px; font-size:12.5px; padding:8px 12px; }
+  .vs-row{ display:flex; align-items:center; gap:10px; margin-top:14px; }
+  .vs-row .field{ flex:1; }
+  .vs-badge{
+    width:30px; height:30px; border-radius:50%; background:var(--gold); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;
+    flex-shrink:0; margin-top:26px;
+  }
+  .hint{ font-size:12px; color:#8A8272; }
+  .example-box{
+    background:#F5F7F1; border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; margin-top:10px; font-size:12.5px; line-height:1.6;
+  }
+  .example-box b{ color:var(--forest); font-size:12px; }
+  .example-box ul{ margin:6px 0 0; padding-left:18px; }
+  .example-box li{ margin-bottom:3px; }
+  .field-example{
+    font-size:11.5px; color:#8A8272; margin:5px 0 14px; line-height:1.5;
+  }
+  .error-msg{
+    display:none; background:#FBEAE8; color:var(--error); border:1px solid #EFC4BF;
+    border-radius:10px; padding:10px 12px; font-size:13px; margin-top:14px;
+  }
+  .btn-primary{
+    width:100%; background:var(--forest); color:#fff; border:none; border-radius:12px;
+    padding:15px; font-size:16px; font-weight:700; margin-top:18px;
+  }
+  .btn-primary:active{ background:var(--forest-2); }
+  .btn-primary:disabled{ background:#B7BFB9; }
+  .btn-ghost{
+    width:100%; background:#fff; color:var(--forest); border:1.5px solid var(--forest);
+    border-radius:12px; padding:13px; font-size:14.5px; font-weight:700; margin-top:10px;
+  }
+  .success-box{ display:none; text-align:center; padding:26px 16px; }
+  .success-box .check{
+    width:52px; height:52px; border-radius:50%; background:var(--success); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 14px;
+  }
+  .success-box h2{ color:var(--success); }
+  .review{
+    text-align:left; background:#F5F7F1; border-radius:10px; padding:14px; margin-top:14px;
+    font-size:13.5px; line-height:1.6; display:none;
+  }
+  .review b{ color:var(--forest); }
+  .fb-status{ font-size:13.5px; color:#5B655F; margin-top:10px; line-height:1.6; }
+  .fb-card{
+    display:none; margin-top:14px; border-left:4px solid var(--gold); background:var(--gold-light);
+    border-radius:0 10px 10px 0; padding:14px 16px;
+  }
+  .fb-card .score{
+    display:inline-block; font-size:12px; font-weight:700; background:var(--forest); color:#fff;
+    padding:2px 10px; border-radius:20px; margin-bottom:8px;
+  }
+  .fb-card p{ margin:0; font-size:14px; line-height:1.6; }
+  .fb-card .writer{ font-size:11.5px; color:#8A7A50; margin-top:8px; }
+  .spinner{
+    display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.4);
+    border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite;
+    vertical-align:-2px; margin-right:6px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ===== 교사용 화면 ===== */
+
+  .cards-row{ display:flex; gap:14px; margin-bottom:20px; flex-wrap:wrap; }
+  .stat-card{
+    flex:1; min-width:150px; background:#fff; border-radius:14px; padding:16px 18px;
+    border:1px solid var(--line); box-shadow:0 1px 6px rgba(30,61,58,0.06);
+  }
+  .stat-card .num{ font-size:26px; font-weight:700; color:var(--forest); font-family:var(--font-display); }
+  .stat-card .label{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .stat-card.warn .num{ color:var(--error); }
+
+  .toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;}
+  .toolbar h2{ font-family:var(--font-display); font-size:16px; color:var(--forest); margin:0; }
+  .last-updated{ font-size:11.5px; color:var(--muted); font-weight:400; font-family:var(--font-body); margin-left:6px; }
+  .btn{ background:var(--forest); color:#fff; border:none; border-radius:9px; padding:9px 16px; font-size:13.5px; font-weight:700; }
+  .btn.ghost{ background:#fff; color:var(--forest); border:1.5px solid var(--forest); }
+  .btn.small{ padding:6px 12px; font-size:12.5px; }
+  .btn:disabled{ background:#B7BFB9; }
+
+  .missing-box{
+    background:#FBEAE8; border:1px solid #EFC4BF; border-radius:10px; padding:10px 14px;
+    font-size:13px; color:var(--error); margin-bottom:16px;
+  }
+  .table-scroll{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 1px 6px rgba(30,61,58,0.06); }
+  th{ background:var(--forest); color:#fff; font-size:12.5px; text-align:left; padding:10px 12px; }
+  td{ padding:10px 12px; font-size:13px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:last-child td{ border-bottom:none; }
+  tr:hover td{ background:#FAF8F1; }
+  .code-badge{ display:inline-block; background:var(--gold-light); color:#7A5A22; padding:2px 9px; border-radius:20px; font-size:12px; font-weight:700; }
+  .cell-wide{ max-width:220px; }
+  textarea.fb-input{ width:100%; min-height:56px; border:1.5px solid var(--line); border-radius:8px; padding:8px; font-size:12.5px; font-family:inherit; resize:vertical; }
+  select.score-select{ width:100%; padding:6px; border-radius:8px; border:1.5px solid var(--line); font-size:12.5px; margin-top:6px; }
+  .row-actions{ display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .saved-tag{ font-size:11px; color:var(--success); font-weight:700; margin-top:6px; display:none; }
+  .empty{ text-align:center; padding:40px; color:var(--muted); font-size:14px; }
+  .ai-key-row{
+    display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap;
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 14px;
+  }
+  .ai-key-row label{ font-size:12.5px; color:var(--muted); }
+  .ai-key-row input{ flex:1; min-width:180px; padding:7px 10px; border-radius:8px; border:1.5px solid var(--line); font-size:12.5px; }
+
+  footer{ text-align:center; font-size:11.5px; color:#9AA39C; padding:20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="eyebrow">세계시민과 지리 · 모자이크 세계</div>
+    <h1>세계지역 탐구 보고서</h1>
+    <p class="desc">자연환경이 다른 두 지역은 어떻게 다른 삶을 만들었을까요? 비교 지역을 정하고, 가설을 세운 뒤 자료를 조사해 결론을 완성해봅시다.</p>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtnStudent" onclick="switchTab('student')">학생용</button>
+    <button class="tab-btn" id="tabBtnTeacher" onclick="switchTab('teacher')">교사용</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= 학생용 화면 ================= -->
+  <div class="view active" id="view-student">
+
+    <!-- 입장 화면: 학번·이름 입력 -->
+    <div id="entryScreen">
+      <h2>탐구 시작하기</h2>
+      <p class="cdesc">학번과 이름을 입력하면 탐구 화면으로 들어갈 수 있어요.</p>
+      <div class="name-row">
+        <div class="field">
+          <label>학번<span class="req">*</span></label>
+          <input type="text" id="entryNumber" placeholder="예: 20105" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>이름<span class="req">*</span></label>
+          <input type="text" id="entryName" placeholder="예: 홍길동" />
+        </div>
+      </div>
+      <div id="entryError">학번과 이름을 모두 입력해주세요.</div>
+      <button onclick="enterStudent()">입장하기</button>
+    </div>
+
+    <div id="studentWrap" style="display:none;">
+
+      <span class="whoami" id="whoamiBadge"></span>
+      <h2 class="student-title">지역탐구활동</h2>
+
+      <div class="step-tabs" id="stepTabs">
+        <button class="step-btn active" onclick="goStep(1)">① 가설</button>
+        <button class="step-btn" onclick="goStep(2)">② 조사데이터</button>
+        <button class="step-btn" onclick="goStep(3)">③ 최종결론</button>
+        <button class="step-btn" onclick="goStep(4)">④ 교사피드백</button>
+      </div>
+
+      <div class="card" id="formCard">
+
+        <!-- ===== ① 가설 ===== -->
+        <div class="step-panel active" id="step-1">
+          <h2>비교 지역 선정</h2>
+          <p class="cdesc">자연환경이 뚜렷하게 대비되는 두 지역을 정해보세요.</p>
+          <div class="vs-row">
+            <div class="field">
+              <label>지역 A<span class="req">*</span></label>
+              <div class="search-row">
+                <input type="text" id="regionA" placeholder="예: 인도네시아 발리" />
+                <button type="button" class="search-btn" onclick="searchRegion('regionA')">🔍</button>
+              </div>
+            </div>
+            <div class="vs-badge">VS</div>
+            <div class="field">
+              <label>지역 B<span class="req">*</span></label>
+              <div class="search-row">
+                <input type="text" id="regionB" placeholder="예: 몽골 고비" />
+                <button type="button" class="search-btn" onclick="searchRegion('regionB')">🔍</button>
+              </div>
+            </div>
+          </div>
+          <p class="hint" style="margin-top:6px;">🔍 버튼을 누르면 새 탭에서 해당 지역을 검색해볼 수 있어요.</p>
+
+          <h2 style="margin-top:22px;">가설 세우기</h2>
+          <p class="cdesc">"~일 것이다" 형태로, 자연환경·문화·인구·산업 중 관심 있는 주제를 골라 예상해보세요.</p>
+          <div class="example-box">
+            <b>예시</b>
+            <ul>
+              <li>자연환경 ↔ 문화 · 고온다습한 지역은 개방적인 가옥 구조를 가질 것이다.</li>
+              <li>기후 ↔ 산업 · 강수량이 많은 지역은 벼농사 중심의 농업이 발달했을 것이다.</li>
+              <li>인구 ↔ 산업 · 인구밀도가 높은 지역은 서비스업 비중이 더 높을 것이다.</li>
+              <li>인구 ↔ 문화 · 인구 이동이 활발한 지역일수록 다양한 문화가 섞여 있을 것이다.</li>
+            </ul>
+          </div>
+          <div class="search-row" style="margin-top:8px;">
+            <button type="button" class="search-btn wide" onclick="searchTopic('비교')">🔍 두 지역 비교 자료 검색하기</button>
+          </div>
+          <label>가설<span class="req">*</span></label>
+          <textarea id="hypothesis" placeholder="예: 고온다습한 지역은 개방적인 가옥 구조를 가질 것이다."></textarea>
+
+          <div class="error-msg" id="errorMsg1">필수 항목을 모두 입력해주세요.</div>
+          <button class="btn-primary" onclick="tryGoStep2()">다음 · 조사데이터</button>
+        </div>
+
+        <!-- ===== ② 조사데이터 ===== -->
+        <div class="step-panel" id="step-2">
+          <h2>조사 데이터</h2>
+          <p class="cdesc">가설과 관련 있는 항목을 <b>2가지 이상</b> 골라 조사해보세요. 🔍 버튼으로 자료를 검색할 수 있어요. 해당 없는 항목은 비워두어도 됩니다.</p>
+          <div class="example-box">
+            <b>예시</b>
+            <ul>
+              <li>자연환경 · 발리는 열대몬순기후로 고온다습하고, 고비는 건조한 사막·스텝 기후로 일교차가 크다.</li>
+              <li>문화 · 발리는 개방형 목조 가옥과 쌀 중심 음식문화가 발달했고, 고비는 이동식 게르 주거와 유제품 중심 식문화가 있다.</li>
+              <li>인구 · 발리는 인구밀도가 높고 관광업 종사 인구 비중이 크며, 고비는 인구밀도가 매우 낮고 유목 인구 비중이 높다.</li>
+              <li>산업 · 발리는 관광업과 벼농사가 발달했고, 고비는 유목업(목축)과 광업이 주요 산업이다.</li>
+            </ul>
+          </div>
+
+          <label>자연환경 조사 <span class="hint">(기후·지형 등)</span></label>
+          <div class="search-row">
+            <textarea id="dataNature" placeholder="두 지역의 기후, 지형 특징을 정리해보세요."></textarea>
+            <button type="button" class="search-btn" onclick="searchTopic('기후 지형')">🔍</button>
+          </div>
+          <p class="field-example">예시 · 고비는 연 강수량이 200mm 이하로 건조하고, 발리는 우기·건기가 뚜렷한 열대기후이다.</p>
+
+          <label>문화 조사 <span class="hint">(의식주·언어·종교 등)</span></label>
+          <div class="search-row">
+            <textarea id="dataCulture" placeholder="두 지역의 가옥, 의복, 음식, 언어, 종교 등을 정리해보세요."></textarea>
+            <button type="button" class="search-btn" onclick="searchTopic('문화 의식주')">🔍</button>
+          </div>
+          <p class="field-example">예시 · 발리는 힌두교 문화의 영향으로 사원 건축과 전통 무용이 발달했다.</p>
+
+          <label>인구 조사 <span class="hint">(인구 규모·분포·이동 등)</span></label>
+          <div class="search-row">
+            <textarea id="dataPopulation" placeholder="두 지역의 인구 규모, 인구밀도, 인구 이동 등을 정리해보세요."></textarea>
+            <button type="button" class="search-btn" onclick="searchTopic('인구 통계')">🔍</button>
+          </div>
+          <p class="field-example">예시 · 고비 사막 지역은 인구밀도가 1km²당 1명 미만으로 매우 낮은 편이다.</p>
+
+          <label>산업 조사 <span class="hint">(주요 산업·농업 형태 등)</span></label>
+          <div class="search-row">
+            <textarea id="dataIndustry" placeholder="두 지역의 주요 산업, 농업 형태(작물·경작 방식) 등을 정리해보세요."></textarea>
+            <button type="button" class="search-btn" onclick="searchTopic('주요 산업 농업')">🔍</button>
+          </div>
+          <p class="field-example">예시 · 발리는 계단식 논을 이용한 벼농사가 발달했고, 고비는 유목을 통한 목축업이 중심이다.</p>
+
+          <div class="error-msg" id="errorMsg2">조사 데이터는 2가지 이상 작성해주세요.</div>
+          <div class="row-actions" style="margin-top:14px;">
+            <button class="btn-ghost" style="margin-top:0;" onclick="goStep(1)">이전</button>
+            <button class="btn-primary" style="margin-top:0;" onclick="tryGoStep3()">다음 · 최종결론</button>
+          </div>
+        </div>
+
+        <!-- ===== ③ 최종결론 ===== -->
+        <div class="step-panel" id="step-3">
+          <h2>최종 결론</h2>
+          <p class="cdesc">가설이 맞았는지, 조사 데이터를 근거로 결론을 정리해보세요.</p>
+          <label>최종결론<span class="req">*</span></label>
+          <textarea id="conclusion" placeholder="조사한 내용을 바탕으로 가설을 검증한 결과를 써보세요."></textarea>
+
+          <label style="margin-top:18px;">활동 소감 <span class="hint">(느낀 점을 자유롭게 적어보세요)</span></label>
+          <textarea id="reflection" placeholder="이번 탐구활동을 하면서 새롭게 알게 된 점이나 느낀 점을 자유롭게 써보세요."></textarea>
+
+          <div class="error-msg" id="errorMsg">필수 항목을 모두 입력해주세요.</div>
+          <div class="row-actions" style="margin-top:14px;">
+            <button class="btn-ghost" style="margin-top:0;" onclick="goStep(2)">이전</button>
+            <button class="btn-primary" style="margin-top:0; flex:1;" id="submitBtn" onclick="submitForm()">제출하기</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="card step-panel" id="step-4">
+        <h2>선생님 피드백</h2>
+        <p class="cdesc"><span id="fbWhoLabel"></span>님, 아래 버튼을 눌러 선생님이 남긴 피드백을 확인해보세요.</p>
+        <button class="btn-ghost" onclick="checkFeedback()" id="fbBtn">피드백 확인하기</button>
+        <div class="fb-status" id="fbStatus"></div>
+        <div class="fb-card" id="fbCard">
+          <span class="score" id="fbScore"></span>
+          <p id="fbText"></p>
+          <div class="writer" id="fbWriter"></div>
+        </div>
+      </div>
+
+      <div class="card success-box" id="successCard">
+        <div class="check">✓</div>
+        <h2>제출이 완료되었습니다</h2>
+        <p style="font-size:13.5px;color:#5B655F;">선생님이 확인 후 피드백을 남겨주실 거예요. 위 <b>④ 교사피드백</b> 탭에서 확인할 수 있어요. 아래에서 내가 쓴 내용을 다시 볼 수 있습니다.</p>
+        <button class="btn-ghost" onclick="toggleReview()">내가 쓴 내용 다시 보기</button>
+        <div class="review" id="reviewBox"></div>
+      </div>
+
+
+    </div>
+  </div>
+
+  <!-- ================= 교사용 화면 ================= -->
+  <div class="view" id="view-teacher">
+
+    <div id="teacherDashboard">
+
+      <div class="ai-key-row">
+        <label>Gemini API Key (선택)</label>
+        <input type="password" id="geminiKey" placeholder="입력 시 AI 피드백 초안 생성 버튼이 실제 AI로 작동합니다" />
+        <span style="font-size:11.5px;color:var(--muted);">미입력 시 규칙 기반 초안이 생성됩니다</span>
+      </div>
+
+      <div class="cards-row">
+        <div class="stat-card">
+          <div class="num" id="totalSubmitted">-</div>
+          <div class="label">제출 인원</div>
+        </div>
+        <div class="stat-card warn">
+          <div class="num" id="totalMissing">-</div>
+          <div class="label">미제출 인원 (전체 <span id="classSizeLabel"></span>명 기준)</div>
+        </div>
+        <div class="stat-card">
+          <div class="num" id="totalFeedback">-</div>
+          <div class="label">피드백 작성 완료</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <h2>학생 제출 현황 <span class="last-updated" id="lastUpdated"></span></h2>
+        <div style="display:flex; gap:8px;">
+          <button class="btn ghost small" onclick="loadAll()">새로고침</button>
+          <button class="btn small" onclick="downloadCSV()">CSV 다운로드</button>
+        </div>
+      </div>
+
+      <div id="missingBox" class="missing-box" style="display:none;"></div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>학번</th>
+              <th>이름</th>
+              <th>비교 지역</th>
+              <th>가설</th>
+              <th>조사데이터(자연/문화/인구/산업)</th>
+              <th>최종결론</th>
+              <th>활동 소감</th>
+              <th style="min-width:220px;">피드백 작성</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="8" class="empty">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<footer>세계시민과 지리 · 세계지역 탐구 보고서</footer>
+
+<script>
+/* ===================== 탭 전환 ===================== */
+let teacherPollTimer = null;
+
+function switchTab(name){
+  document.getElementById('view-student').classList.toggle('active', name === 'student');
+  document.getElementById('view-teacher').classList.toggle('active', name === 'teacher');
+  document.getElementById('tabBtnStudent').classList.toggle('active', name === 'student');
+  document.getElementById('tabBtnTeacher').classList.toggle('active', name === 'teacher');
+
+  if(name === 'teacher'){
+    loadAll();
+    if(!teacherPollTimer){
+      teacherPollTimer = setInterval(() => loadAll({ silent:true }), 15000); // 15초마다 자동으로 제출 현황 새로고침
+    }
+  } else if(teacherPollTimer){
+    clearInterval(teacherPollTimer);
+    teacherPollTimer = null;
+  }
+}
+
+// 브라우저 탭이 백그라운드로 가면 폴링을 멈추고, 다시 보이면 즉시 새로고침 후 재시작
+document.addEventListener('visibilitychange', () => {
+  const onTeacherTab = document.getElementById('view-teacher').classList.contains('active');
+  if(document.hidden){
+    if(teacherPollTimer){ clearInterval(teacherPollTimer); teacherPollTimer = null; }
+  } else if(onTeacherTab){
+    loadAll({ silent:true });
+    if(!teacherPollTimer) teacherPollTimer = setInterval(() => loadAll({ silent:true }), 15000);
+  }
+});
+
+function nowStr(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/* ===================== 학생용 로직 ===================== */
+let studentNumber = '';
+let studentName = '';
+
+function enterStudent(){
+  const num = document.getElementById('entryNumber').value.trim();
+  const name = document.getElementById('entryName').value.trim();
+  const err = document.getElementById('entryError');
+  if(!num || !name){
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  studentNumber = num;
+  studentName = name;
+
+  document.getElementById('entryScreen').style.display = 'none';
+  document.getElementById('studentWrap').style.display = 'block';
+  document.getElementById('whoamiBadge').textContent = `${num} · ${name}`;
+  document.getElementById('fbWhoLabel').textContent = name;
+  goStep(1);
+}
+
+function showError(msg){
+  const box = document.getElementById('errorMsg');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+function hideError(){
+  document.getElementById('errorMsg').style.display = 'none';
+}
+
+/* ----- 단계 이동 ----- */
+let formSubmitted = false;
+
+function goStep(n){
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('step-' + n).classList.add('active');
+  document.querySelectorAll('.step-btn').forEach((b, i) => b.classList.toggle('active', i === n - 1));
+
+  const card = document.getElementById('formCard');
+  if(n === 4){
+    card.style.display = 'none';
+  } else if(!formSubmitted){
+    card.style.display = 'block';
+  }
+
+  const target = n === 4 ? document.getElementById('step-4') : card;
+  if(target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function tryGoStep2(){
+  const regionA = document.getElementById('regionA').value.trim();
+  const regionB = document.getElementById('regionB').value.trim();
+  const hyp = document.getElementById('hypothesis').value.trim();
+  const err = document.getElementById('errorMsg1');
+  if(!regionA || !regionB || !hyp){
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  goStep(2);
+}
+
+function tryGoStep3(){
+  const dNature = document.getElementById('dataNature').value.trim();
+  const dCulture = document.getElementById('dataCulture').value.trim();
+  const dPopulation = document.getElementById('dataPopulation').value.trim();
+  const dIndustry = document.getElementById('dataIndustry').value.trim();
+  const filledCount = [dNature, dCulture, dPopulation, dIndustry].filter(v => v.length > 0).length;
+  const err = document.getElementById('errorMsg2');
+  if(filledCount < 2){
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  goStep(3);
+}
+
+/* ----- 검색 기능 ----- */
+function searchRegion(inputId){
+  const v = document.getElementById(inputId).value.trim();
+  if(!v){ alert('지역명을 먼저 입력해주세요.'); return; }
+  window.open('https://www.google.com/search?q=' + encodeURIComponent(v), '_blank');
+}
+
+function searchTopic(keyword){
+  const a = document.getElementById('regionA').value.trim();
+  const b = document.getElementById('regionB').value.trim();
+  if(!a || !b){ alert('먼저 비교 지역 두 곳을 입력해주세요.'); return; }
+  const query = keyword === '비교' ? `${a} ${b} 비교` : `${a} ${b} ${keyword}`;
+  window.open('https://www.google.com/search?q=' + encodeURIComponent(query), '_blank');
+}
+
+async function submitForm(){
+  const regionA = document.getElementById('regionA').value.trim();
+  const regionB = document.getElementById('regionB').value.trim();
+  const hyp = document.getElementById('hypothesis').value.trim();
+  const dNature = document.getElementById('dataNature').value.trim();
+  const dCulture = document.getElementById('dataCulture').value.trim();
+  const dPopulation = document.getElementById('dataPopulation').value.trim();
+  const dIndustry = document.getElementById('dataIndustry').value.trim();
+  const conclusion = document.getElementById('conclusion').value.trim();
+  const reflection = document.getElementById('reflection').value.trim();
+
+  const filledDataCount = [dNature, dCulture, dPopulation, dIndustry].filter(v => v.length > 0).length;
+
+  if(!regionA || !regionB || !hyp){
+    alert('① 가설 단계 정보가 비어 있어요. 다시 확인해주세요.');
+    goStep(1);
+    return;
+  }
+  if(filledDataCount < 2){
+    alert('② 조사 데이터를 2가지 이상 작성해주세요.');
+    goStep(2);
+    return;
+  }
+  if(!conclusion){
+    showError('최종결론을 입력해주세요.');
+    return;
+  }
+  hideError();
+
+  if(SCRIPT_URL.indexOf('여기에') !== -1){
+    showError('선생님이 아직 웹 앱 주소를 연결하지 않았어요. 잠시만 기다려주세요.');
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>제출 중...';
+
+  const row = [studentNumber, studentName, regionA, regionB, hyp, dNature, dCulture, dPopulation, dIndustry, conclusion, reflection, nowStr()];
+
+  try{
+    const res = await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({ sheet:'학생응답', row })
+    });
+    const result = await res.json().catch(() => null);
+
+    if(!result || result.ok !== true){
+      showError('저장에 실패했어요. (' + (result && result.error ? result.error : '알 수 없는 오류') + ') 선생님께 알려주세요.');
+      btn.disabled = false;
+      btn.textContent = '제출하기';
+      return;
+    }
+
+    formSubmitted = true;
+    document.getElementById('formCard').style.display = 'none';
+    document.getElementById('successCard').style.display = 'block';
+
+    const rev = document.getElementById('reviewBox');
+    rev.innerHTML = `
+      <p><b>비교 지역</b> · ${regionA} ↔ ${regionB}</p>
+      <p><b>가설</b> · ${hyp}</p>
+      ${dNature ? `<p><b>자연환경 조사</b> · ${dNature}</p>` : ''}
+      ${dCulture ? `<p><b>문화 조사</b> · ${dCulture}</p>` : ''}
+      ${dPopulation ? `<p><b>인구 조사</b> · ${dPopulation}</p>` : ''}
+      ${dIndustry ? `<p><b>산업 조사</b> · ${dIndustry}</p>` : ''}
+      <p><b>최종결론</b> · ${conclusion}</p>
+      ${reflection ? `<p><b>활동 소감</b> · ${reflection}</p>` : ''}
+    `;
+
+    setTimeout(() => goStep(4), 900);
+  }catch(err){
+    showError('제출 중 오류가 발생했어요. 다시 시도해주세요.');
+    btn.disabled = false;
+    btn.textContent = '제출하기';
+  }
+}
+
+function toggleReview(){
+  const box = document.getElementById('reviewBox');
+  box.style.display = box.style.display === 'block' ? 'none' : 'block';
+}
+
+async function checkFeedback(){
+  const status = document.getElementById('fbStatus');
+  const card = document.getElementById('fbCard');
+  card.style.display = 'none';
+
+  if(SCRIPT_URL.indexOf('여기에') !== -1){
+    status.textContent = '선생님이 아직 웹 앱 주소를 연결하지 않았어요.';
+    return;
+  }
+
+  const btn = document.getElementById('fbBtn');
+  btn.disabled = true;
+  status.textContent = '확인하는 중...';
+
+  try{
+    const res = await fetch(SCRIPT_URL + '?sheet=' + encodeURIComponent('피드백'));
+    const rows = await res.json();
+    const mine = rows.slice(1).filter(r => String(r[0]).trim() === studentNumber);
+
+    if(mine.length === 0){
+      status.textContent = '아직 등록된 피드백이 없어요. 조금 뒤 다시 확인해보세요.';
+    } else {
+      const latest = mine[mine.length - 1];
+      status.textContent = '';
+      document.getElementById('fbScore').textContent = latest[4] || '-';
+      document.getElementById('fbText').textContent = latest[2] || '';
+      document.getElementById('fbWriter').textContent =
+        '작성 · ' + (latest[3] || '선생님') + ' · ' + (latest[5] || '');
+      card.style.display = 'block';
+    }
+  }catch(err){
+    status.textContent = '피드백을 불러오지 못했어요. 잠시 후 다시 시도해주세요.';
+  }
+  btn.disabled = false;
+}
+
+/* ===================== 교사용 로직 ===================== */
+let submissionRows = [];
+let feedbackRows = [];
+let dashboardInited = false;
+
+async function fetchSheet(name){
+  const res = await fetch(SCRIPT_URL + '?sheet=' + encodeURIComponent(name) + '&t=' + Date.now());
+  const rows = await res.json();
+  return rows.slice(1);
+}
+
+function timeOnly(){
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+async function loadAll(opts){
+  const silent = !!(opts && opts.silent);
+
+  if(!dashboardInited){
+    document.getElementById('classSizeLabel').textContent = CLASS_SIZE;
+    dashboardInited = true;
+  }
+
+  // 자동 새로고침(폴링) 중에 선생님이 피드백을 입력하고 있으면 건너뛰어 내용이 사라지지 않게 함
+  if(silent){
+    const active = document.activeElement;
+    if(active && (active.classList.contains('fb-input') || active.classList.contains('score-select'))){
+      return;
+    }
+  }
+
+  const body = document.getElementById('tableBody');
+  if(SCRIPT_URL.indexOf('여기에') !== -1){
+    body.innerHTML = '<tr><td colspan="8" class="empty">Apps Script 웹앱 URL이 아직 연결되지 않았습니다. 상단 코드의 SCRIPT_URL을 채워주세요.</td></tr>';
+    return;
+  }
+  if(!silent){
+    body.innerHTML = '<tr><td colspan="8" class="empty">불러오는 중...</td></tr>';
+  }
+  try{
+    [submissionRows, feedbackRows] = await Promise.all([
+      fetchSheet('학생응답'),
+      fetchSheet('피드백')
+    ]);
+    renderStats();
+    renderTable();
+    const lu = document.getElementById('lastUpdated');
+    if(lu) lu.textContent = '· 마지막 업데이트 ' + timeOnly();
+  }catch(err){
+    if(!silent){
+      body.innerHTML = '<tr><td colspan="8" class="empty">데이터를 불러오지 못했습니다. URL과 시트 이름을 확인해주세요.</td></tr>';
+    }
+  }
+}
+
+function latestFeedbackFor(number){
+  const mine = feedbackRows.filter(r => String(r[0]).trim() === String(number).trim());
+  return mine.length ? mine[mine.length - 1] : null;
+}
+
+function renderStats(){
+  const submittedNumbers = new Set(submissionRows.map(r => String(r[0]).trim()));
+  document.getElementById('totalSubmitted').textContent = submittedNumbers.size;
+  const missing = Math.max(CLASS_SIZE - submittedNumbers.size, 0);
+  document.getElementById('totalMissing').textContent = missing;
+  document.getElementById('totalFeedback').textContent = feedbackRows.length;
+
+  const missingBox = document.getElementById('missingBox');
+  if(missing > 0){
+    missingBox.style.display = 'block';
+    missingBox.textContent = `아직 제출하지 않은 학생이 ${missing}명 있습니다. (전체 ${CLASS_SIZE}명 중 ${submittedNumbers.size}명 제출)`;
+  } else {
+    missingBox.style.display = 'none';
+  }
+}
+
+function renderTable(){
+  const body = document.getElementById('tableBody');
+  if(submissionRows.length === 0){
+    body.innerHTML = '<tr><td colspan="8" class="empty">아직 제출된 학생 응답이 없습니다.</td></tr>';
+    return;
+  }
+  body.innerHTML = '';
+  submissionRows.forEach((row, idx) => {
+    const [number, name, regionA, regionB, hyp, dNature, dCulture, dPopulation, dIndustry, conclusion, reflection] = row;
+    const fb = latestFeedbackFor(number);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="code-badge">${escapeHtml(number)}</span></td>
+      <td>${escapeHtml(name)}</td>
+      <td class="cell-wide">${escapeHtml(regionA)} ↔ ${escapeHtml(regionB)}</td>
+      <td class="cell-wide">${escapeHtml(hyp)}</td>
+      <td class="cell-wide">${[
+        dNature ? `<b>자연</b> ${escapeHtml(dNature)}` : '',
+        dCulture ? `<b>문화</b> ${escapeHtml(dCulture)}` : '',
+        dPopulation ? `<b>인구</b> ${escapeHtml(dPopulation)}` : '',
+        dIndustry ? `<b>산업</b> ${escapeHtml(dIndustry)}` : ''
+      ].filter(Boolean).join('<br>')}</td>
+      <td class="cell-wide">${escapeHtml(conclusion)}</td>
+      <td class="cell-wide">${escapeHtml(reflection)}</td>
+      <td>
+        <textarea class="fb-input" id="fbInput-${idx}" placeholder="피드백을 입력하세요">${fb ? escapeHtml(fb[2]) : ''}</textarea>
+        <select class="score-select" id="fbScore-${idx}">
+          <option value="상" ${fb && fb[4]==='상' ? 'selected':''}>상</option>
+          <option value="중" ${fb && fb[4]==='중' ? 'selected':''}>중</option>
+          <option value="하" ${fb && fb[4]==='하' ? 'selected':''}>하</option>
+        </select>
+        <div class="row-actions">
+          <button class="btn small ghost" onclick="generateAIDraft(${idx}, '${escapeAttr(hyp)}', '${escapeAttr(dNature)}', '${escapeAttr(dCulture)}', '${escapeAttr(dPopulation)}', '${escapeAttr(dIndustry)}', '${escapeAttr(conclusion)}')">AI 초안 생성</button>
+          <button class="btn small" onclick="saveFeedback(${idx}, '${escapeAttr(number)}', '${escapeAttr(name)}')">저장</button>
+        </div>
+        <div class="saved-tag" id="saved-${idx}">저장되었습니다</div>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function escapeHtml(v){
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(v){
+  return String(v ?? '').replace(/'/g, "\\'").replace(/\n/g, ' ');
+}
+
+async function saveFeedback(idx, number, name){
+  const content = document.getElementById(`fbInput-${idx}`).value.trim();
+  const score = document.getElementById(`fbScore-${idx}`).value;
+  if(!content){ alert('피드백 내용을 입력해주세요.'); return; }
+
+  const writer = content.startsWith('[AI 초안]') ? 'AI(교사검토)' : '교사';
+  const row = [number, name, content, writer, score, nowStr()];
+
+  await fetch(SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({ sheet:'피드백', row })
+  });
+
+  const tag = document.getElementById(`saved-${idx}`);
+  tag.style.display = 'block';
+  setTimeout(() => tag.style.display = 'none', 2500);
+  feedbackRows.push(row);
+  document.getElementById('totalFeedback').textContent = feedbackRows.length;
+}
+
+async function generateAIDraft(idx, hyp, dNature, dCulture, dPopulation, dIndustry, conclusion){
+  const key = document.getElementById('geminiKey').value.trim();
+  const textarea = document.getElementById(`fbInput-${idx}`);
+  textarea.value = '초안 생성 중...';
+
+  if(key){
+    try{
+      const prompt = `너는 고등학교 지리 교사다. 학생의 탐구 내용을 보고 학생에게 건네는 피드백을 작성해라.
+가설: ${hyp}
+자연환경 조사: ${dNature || '(작성 안 함)'}
+문화 조사: ${dCulture || '(작성 안 함)'}
+인구 조사: ${dPopulation || '(작성 안 함)'}
+산업 조사: ${dIndustry || '(작성 안 함)'}
+최종결론: ${conclusion}
+조건: 잘한 점 1가지와 보완할 점 1가지를 따뜻한 존댓말로, 60자 이내로 작성. 정답을 대신 알려주지 말고 스스로 더 생각해볼 질문을 포함할 것.`;
+
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
+      });
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      textarea.value = '[AI 초안] ' + (text ? text.trim() : '생성에 실패했습니다. 직접 작성해주세요.');
+    }catch(err){
+      textarea.value = '[AI 초안] 생성 중 오류가 발생했습니다. 직접 작성해주세요.';
+    }
+  } else {
+    textarea.value = `[AI 초안] 자연환경과 문화를 연결지어 설명한 점이 좋습니다. "${conclusion.slice(0,20)}..." 부분은 구체적인 근거를 한 가지 더 들면 더 탄탄해질 것 같아요. 다른 계절이나 지형에서도 같은 결론이 유지될까요?`;
+  }
+}
+
+function downloadCSV(){
+  if(submissionRows.length === 0){ alert('다운로드할 데이터가 없습니다.'); return; }
+  const header = ['학번','이름','비교지역A','비교지역B','가설','조사데이터_자연환경','조사데이터_문화','조사데이터_인구','조사데이터_산업','최종결론','활동소감','제출시각'];
+  const lines = [header.join(',')];
+  submissionRows.forEach(row => {
+    lines.push(row.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(','));
+  });
+  const blob = new Blob(["\uFEFF" + lines.join('\n')], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '학생응답_' + nowStr().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
