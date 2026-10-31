@@ -1,110 +1,280 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>아시아 지도 학습 앱</title>
-<style>
-  body {
-    background-color: #ffffff;
-    font-family: 'Malgun Gothic', sans-serif;
-    text-align: center;
-    margin: 0;
-    padding: 20px;
-  }
-  h1 { color: #333; }
-  #map-container {
-    position: relative;
-    display: inline-block;
-    margin-top: 20px;
-    border: 2px solid #eee;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  /* 백지도 이미지 설정 */
-  #map-container img {
-    width: 800px;
-    height: auto;
-    display: block;
-  }
-  /* 국가별 색상 마커 */
-  .marker {
-    position: absolute;
-    padding: 6px 12px;
-    border-radius: 20px;
-    color: white;
-    font-weight: bold;
-    font-size: 14px;
-    transform: translate(-50%, -50%);
-    display: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-    pointer-events: none;
-  }
-  .controls {
-    margin-top: 20px;
-  }
-  .country-btn {
-    margin: 5px;
-    padding: 10px 20px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    background: #f9f9f9;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: all 0.2s;
-  }
-  .country-btn:hover { background: #e0e0e0; }
-  .country-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지리 만점 기원! 자원과 지속가능한 발전 퀴즈 💖</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Gowun Dodum', sans-serif;
+            background-color: #fdf2f8; /* tailwind pink-50 */
+            overflow-x: hidden;
+        }
+        
+        /* 귀여운 그림자 효과 */
+        .cute-shadow {
+            box-shadow: 0 10px 25px -5px rgba(244, 114, 182, 0.3), 0 8px 10px -6px rgba(244, 114, 182, 0.2);
+        }
+
+        /* 별풍선 파티클 애니메이션 */
+        @keyframes pop {
+            0% { 
+                transform: translate(0, 0) scale(0.5); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translate(var(--tx), var(--ty)) scale(1.5) rotate(var(--rot)); 
+                opacity: 0; 
+            }
+        }
+
+        .star-balloon {
+            position: fixed;
+            pointer-events: none;
+            animation: pop 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            font-size: 28px;
+            z-index: 100;
+        }
+
+        /* 선택지 호버 애니메이션 */
+        .option-btn {
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(244, 114, 182, 0.3);
+        }
+        
+        .correct-ans {
+            background-color: #fbcfe8 !important; /* pink-200 */
+            border-color: #ec4899 !important; /* pink-500 */
+            color: #be185d !important; /* pink-700 */
+            font-weight: bold;
+        }
+        
+        .wrong-ans {
+            background-color: #f3f4f6 !important;
+            border-color: #9ca3af !important;
+            color: #6b7280 !important;
+            opacity: 0.7;
+        }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex items-center justify-center p-4">
 
-  <h1>아시아 국가 및 수도 찾기</h1>
-  <p>아래에서 국가를 선택하면 지도에 위치와 수도가 표시됩니다.</p>
+    <!-- 대시보드 (시작 화면) -->
+    <div id="dashboard" class="bg-white rounded-3xl p-8 max-w-2xl w-full cute-shadow border border-pink-100">
+        <h1 class="text-3xl font-bold text-pink-500 mb-2 text-center">지리 만점 기원 퀴즈 💖</h1>
+        <p class="text-center text-pink-400 mb-6">V-3. 자원의 분포와 V-4. 지속가능한 발전</p>
+        
+        <div class="bg-pink-50 rounded-2xl p-6 mb-8 text-gray-700 leading-relaxed border border-pink-100">
+            <h2 class="font-bold text-lg text-pink-600 mb-3">📝 핵심 개념 요약</h2>
+            <ul class="space-y-2 list-disc list-inside marker:text-pink-400">
+                <li><b class="text-pink-500">자원의 특성:</b> 유한성(고갈), 편재성(일부 지역 편중), 가변성(기술/경제적 의미 변화)</li>
+                <li><b class="text-pink-500">화석 연료:</b> 
+                    석탄(가장 먼저 상용화), 석유(소비량 1위, 수송용, 서남아시아 편재), 천연가스(냉동 액화 기술로 급증, 오염 적음)</li>
+                <li><b class="text-pink-500">신·재생 에너지:</b> 수력(브라질, 캐나다), 풍력(영국, 독일), 지열(판의 경계 - 아이슬란드)</li>
+                <li><b class="text-pink-500">지속가능한 발전:</b> 현세대와 미래세대의 경제·사회·환경이 조화와 균형을 이루는 발전</li>
+            </ul>
+        </div>
+        
+        <button onclick="startQuiz()" class="w-full bg-pink-400 hover:bg-pink-500 text-white font-bold text-xl py-4 rounded-2xl transition-colors cute-shadow">
+            두근두근 스타트! ✨
+        </button>
+    </div>
 
-  <div id="map-container">
-    <!-- 첨부해주신 이미지 파일명을 그대로 사용합니다 -->
-    <img src="아시아 백지도_2.png" alt="아시아 백지도">
-    
-    <!-- 마커들 (초기에는 숨겨짐) -->
-    <div id="marker-kr" class="marker" style="top: 45%; left: 82%; background-color: #FF5733;">대한민국 (서울)</div>
-    <div id="marker-jp" class="marker" style="top: 48%; left: 91%; background-color: #9C27B0;">일본 (도쿄)</div>
-    <div id="marker-cn" class="marker" style="top: 45%; left: 65%; background-color: #E91E63;">중국 (베이징)</div>
-    <div id="marker-in" class="marker" style="top: 70%; left: 35%; background-color: #4CAF50;">인도 (뉴델리)</div>
-    <div id="marker-sa" class="marker" style="top: 65%; left: 12%; background-color: #FF9800;">사우디아라비아 (리야드)</div>
-  </div>
+    <!-- 퀴즈 화면 -->
+    <div id="quiz-container" class="bg-white rounded-3xl p-8 max-w-2xl w-full cute-shadow border border-pink-100 hidden">
+        <div class="flex justify-between items-center mb-6">
+            <span id="question-progress" class="bg-pink-100 text-pink-600 px-4 py-1 rounded-full font-bold text-sm">Question 1 / 10</span>
+            <span id="score-display" class="text-pink-500 font-bold">점수: 0점</span>
+        </div>
+        
+        <h2 id="question-text" class="text-2xl font-bold text-gray-800 mb-8 leading-tight">
+            질문이 여기에 표시됩니다.
+        </h2>
+        
+        <div id="options-container" class="space-y-3">
+            <!-- 선택지 버튼들이 JS로 생성됨 -->
+        </div>
+    </div>
 
-  <div class="controls">
-    <button class="country-btn" onclick="showCountry('kr', this)">대한민국</button>
-    <button class="country-btn" onclick="showCountry('jp', this)">일본</button>
-    <button class="country-btn" onclick="showCountry('cn', this)">중국</button>
-    <button class="country-btn" onclick="showCountry('in', this)">인도</button>
-    <button class="country-btn" onclick="showCountry('sa', this)">사우디아라비아</button>
-  </div>
+    <!-- 결과 화면 -->
+    <div id="result-container" class="bg-white rounded-3xl p-8 max-w-2xl w-full cute-shadow border border-pink-100 hidden text-center">
+        <div class="text-6xl mb-4">🏆</div>
+        <h1 class="text-3xl font-bold text-pink-500 mb-4">수고했어요!</h1>
+        <p id="final-message" class="text-xl text-gray-700 mb-8">당신의 점수는...</p>
+        
+        <button onclick="location.reload()" class="w-full bg-pink-400 hover:bg-pink-500 text-white font-bold text-xl py-4 rounded-2xl transition-colors cute-shadow">
+            다시 도전하기 🔄
+        </button>
+    </div>
 
-  <script>
-    let foundCount = 0;
-    const totalCountries = 5;
+    <script>
+        const questions = [
+            {
+                q: "자연에서 얻을 수 있는 것 중, 기술 및 경제적 여건에 따라 자원의 가치나 의미가 달라지는 특성을 무엇이라고 할까요?",
+                options: ["유한성", "가변성", "편재성", "지속성"],
+                answer: 1
+            },
+            {
+                q: "현재 전 세계 1차 에너지 소비량 중에서 가장 많은 비중을 차지하며, 주로 수송용과 석유화학 공업에 이용되는 자원은?",
+                options: ["석탄", "천연가스", "원자력", "석유"],
+                answer: 3
+            },
+            {
+                q: "다음 중 자원의 '편재성'으로 인해 자원 보유국이 자원의 수출을 금지하거나 가격을 인상하여 발생하는 갈등 현상은?",
+                options: ["온실가스 배출권 거래제", "자원 민족주의", "지속 가능한 발전", "로컬푸드 운동"],
+                answer: 1
+            },
+            {
+                q: "화석 연료 중 가장 먼저 상용화되었으며, 산업 혁명기의 주요 동력원이었으나 최근 소비 비중이 감소하고 있는 자원은?",
+                options: ["천연가스", "석유", "석탄", "신재생 에너지"],
+                answer: 2
+            },
+            {
+                q: "냉동 액화 기술의 발달로 운반과 저장이 편리해지면서 수요가 급증했으며, 연소 시 대기 오염 물질 배출이 가장 적은 화석 연료는?",
+                options: ["석유", "천연가스", "석탄", "원자력"],
+                answer: 1
+            },
+            {
+                q: "주요 국가별 에너지 소비량의 특징으로 알맞은 것은?",
+                options: [
+                    "미국은 석탄의 소비 비중이 가장 높다.", 
+                    "중국은 천연가스의 소비 비중이 가장 높다.", 
+                    "프랑스는 원자력의 소비 비중이 화석연료(석탄 등)보다 높다.", 
+                    "인도는 신재생 에너지의 소비 비중이 가장 높다."
+                ],
+                answer: 2
+            },
+            {
+                q: "판의 경계에 위치한 신기 조산대 지역(예: 아이슬란드, 필리핀 등)에서 유리하게 생산할 수 있는 신·재생 에너지는?",
+                options: ["풍력 발전", "지열 발전", "조력 발전", "태양광 발전"],
+                answer: 1
+            },
+            {
+                q: "브라질, 캐나다, 노르웨이 등에서 생산 비중이 높으며, 큰 강 유역이나 빙하 지형을 활용하는 신·재생 에너지는?",
+                options: ["수력", "지열", "풍력", "바이오 에너지"],
+                answer: 0
+            },
+            {
+                q: "미래 세대가 사용할 자원을 낭비하지 않으면서 경제, 사회, 환경이 조화와 균형을 이루는 발전을 뜻하는 용어는?",
+                options: ["친환경 개발", "지속 가능한 발전", "공정 무역", "경제 성장주의"],
+                answer: 1
+            },
+            {
+                q: "지속 가능한 발전을 위한 '개인적 차원'의 노력으로 가장 알맞은 것은?",
+                options: [
+                    "신·재생 에너지 공급 의무화 제도 시행", 
+                    "온실가스 배출권 거래제 참여", 
+                    "사회 취약 계층을 위한 기초 생활 보장 제도 도입", 
+                    "로컬푸드 구매 및 공정무역 제품 이용하기"
+                ],
+                answer: 3
+            }
+        ];
 
-    function showCountry(id, btnElement) {
-      // 마커 표시
-      document.getElementById('marker-' + id).style.display = 'block';
-      
-      // 버튼 비활성화 (중복 클릭 방지)
-      btnElement.disabled = true;
-      btnElement.style.backgroundColor = '#d3f8d3'; // 완료 표시 색상
-      
-      foundCount++;
-      
-      // 모든 국가를 찾았을 때 결과 알림
-      if(foundCount === totalCountries) {
-        setTimeout(() => {
-          alert("축하합니다! 모든 국가를 찾았습니다.\n\n[아시아 지역 특징]\n인구: 약 47억 명 (세계 인구의 60%)\n특징: 세계에서 가장 넓고 인구가 많은 대륙으로, 다양한 기후와 문화가 공존합니다.");
-        }, 500);
-      }
-    }
-  </script>
+        let currentQuestion = 0;
+        let score = 0;
+
+        function startQuiz() {
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('quiz-container').classList.remove('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQuestion];
+            document.getElementById('question-progress').innerText = `Question ${currentQuestion + 1} / 10`;
+            document.getElementById('question-text').innerText = q.q;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = ''; // 초기화
+
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full text-left p-4 rounded-xl border-2 border-pink-100 bg-white text-gray-700 font-medium hover:border-pink-300 focus:outline-none";
+                btn.innerText = opt;
+                btn.onclick = (e) => checkAnswer(index, btn, e);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedIndex, btnElement, event) {
+            const q = questions[currentQuestion];
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            // 모든 버튼 비활성화
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (selectedIndex === q.answer) {
+                // 정답
+                btnElement.classList.add('correct-ans');
+                score += 10;
+                document.getElementById('score-display').innerText = `점수: ${score}점`;
+                createStarBalloons(event.clientX, event.clientY);
+            } else {
+                // 오답
+                btnElement.classList.add('wrong-ans');
+                // 정답 버튼 표시
+                buttons[q.answer].classList.add('correct-ans');
+            }
+
+            // 1.5초 후 다음 문제로
+            setTimeout(() => {
+                currentQuestion++;
+                if (currentQuestion < questions.length) {
+                    loadQuestion();
+                } else {
+                    showResult();
+                }
+            }, 1500);
+        }
+
+        function createStarBalloons(x, y) {
+            const emojis = ['⭐', '🎈', '💖', '✨'];
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'star-balloon';
+                particle.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                
+                // 마우스 클릭 위치 근처에서 시작
+                particle.style.left = (x - 15) + 'px';
+                particle.style.top = (y - 15) + 'px';
+                
+                // 랜덤 이동 방향 및 회전
+                const tx = (Math.random() - 0.5) * 200 + 'px';
+                const ty = (Math.random() - 1) * 200 + 'px'; // 주로 위로 퍼지게
+                const rot = (Math.random() * 360) + 'deg';
+                
+                particle.style.setProperty('--tx', tx);
+                particle.style.setProperty('--ty', ty);
+                particle.style.setProperty('--rot', rot);
+                
+                document.body.appendChild(particle);
+                
+                // 애니메이션 끝나면 삭제
+                setTimeout(() => {
+                    particle.remove();
+                }, 1000);
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('result-container').classList.remove('hidden');
+            
+            const messageEl = document.getElementById('final-message');
+            if (score === 100) {
+                messageEl.innerHTML = `총 <b class="text-pink-600 text-2xl">100점!</b><br>완벽해요! 내신 1등급은 따놓은 당상입니다! 🎉`;
+            } else if (score >= 70) {
+                messageEl.innerHTML = `총 <b class="text-pink-600 text-2xl">${score}점!</b><br>정말 잘했어요! 조금만 더 복습하면 완벽해질 거예요! 💗`;
+            } else {
+                messageEl.innerHTML = `총 <b class="text-pink-600 text-2xl">${score}점!</b><br>틀린 문제는 대시보드 요약을 보고 꼭 다시 확인해봐요! 화이팅! 💪`;
+            }
+        }
+    </script>
 </body>
 </html>
